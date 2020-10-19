@@ -152,6 +152,8 @@ KortexArmSimulation::KortexArmSimulation(ros::NodeHandle& node_handle): m_node_h
 
         // Create default actions
         CreateDefaultActions();
+    } else {
+        m_active_controller_type = ControllerType::kIndividual;
     }
 
     // Create publishers and subscribers
@@ -192,9 +194,12 @@ KortexArmSimulation::KortexArmSimulation(ros::NodeHandle& node_handle): m_node_h
     std::fill(m_velocity_commands.begin(), m_velocity_commands.end(), 0.0);
 
     // Create and connect action clients
-    m_follow_joint_trajectory_action_client.reset(new actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction>(
-        "/" + m_robot_name + "/" + m_prefix + m_arm_name + "_joint_trajectory_controller" + "/follow_joint_trajectory", true));
-    m_follow_joint_trajectory_action_client->waitForServer();
+    if (enable_moveit) {
+        m_follow_joint_trajectory_action_client.reset(new actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction>(
+                "/" + m_robot_name + "/" + m_prefix + m_arm_name + "_joint_trajectory_controller" + "/follow_joint_trajectory", true));
+        m_follow_joint_trajectory_action_client->waitForServer();
+    }
+
     if (IsGripperPresent())
     {
         m_gripper_action_client.reset(new actionlib::SimpleActionClient<control_msgs::GripperCommandAction>(
