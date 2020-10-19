@@ -138,15 +138,21 @@ KortexArmSimulation::KortexArmSimulation(ros::NodeHandle& node_handle): m_node_h
         m_velocity_trap_profiles.push_back(KDL::VelocityProfile_Trap(m_arm_velocity_max_limits[i], m_arm_acceleration_max_limits[i]));
     }
 
-    // Start MoveIt client
-    m_moveit_arm_interface.reset(new moveit::planning_interface::MoveGroupInterface(ARM_PLANNING_GROUP));
-    if (IsGripperPresent())
-    {
-        m_moveit_gripper_interface.reset(new moveit::planning_interface::MoveGroupInterface(GRIPPER_PLANNING_GROUP));   
-    }
+    // Load parameter specifying if MoveIt shall be used
+    ros::param::get("~enable_moveit", enable_moveit);
 
-    // Create default actions
-    CreateDefaultActions();
+    // Start MoveIt client
+    if (enable_moveit) {
+        m_moveit_arm_interface.reset(new moveit::planning_interface::MoveGroupInterface(ARM_PLANNING_GROUP));
+        if (IsGripperPresent()) {
+            m_moveit_gripper_interface.reset(
+                    new moveit::planning_interface::MoveGroupInterface(GRIPPER_PLANNING_GROUP));
+        }
+
+
+        // Create default actions
+        CreateDefaultActions();
+    }
 
     // Create publishers and subscribers
     for (int i = 0; i < GetDOF(); i++)

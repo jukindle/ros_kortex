@@ -34,6 +34,9 @@
     <arg name="default_goal_time_tolerance" default="0.5"/> <!--seconds-->
     <arg name="default_goal_tolerance" default="0.005"/> <!--radians-->
 
+    <!-- MoveIt usage definition -->
+    <arg name="enable_moveit" default="true"/>
+
     <group ns="$(arg robot_name)">
         <group if="$(eval not arg('prefix'))">
             <!-- Load the description for the robot -->
@@ -77,6 +80,7 @@
             <rosparam command="load" file="$(find kortex_description)/arms/$(arg arm)/$(arg dof)dof/config/joint_limits.yaml" subst_value="true"/>
             <!-- If there is a gripper, load the active joint names for it -->
             <rosparam command="load" file="$(find kortex_description)/grippers/$(arg gripper)/config/joint_limits.yaml" unless="$(eval not arg('gripper'))" subst_value="true"/>
+            <param name="enable_moveit" value="$(arg enable_moveit)"/>
         </node>
         
         <!-- Start MoveIt! main executable -->

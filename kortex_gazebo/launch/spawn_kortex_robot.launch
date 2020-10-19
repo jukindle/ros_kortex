@@ -5,7 +5,7 @@
     <arg name="start_gazebo" default="true"/>
     <arg name="gazebo_gui"   default ="true"/>
     <arg name="start_rviz" default="true"/>
-    
+
     <!-- Initial position in Gazebo -->
     <arg name="x0" default="0"/>
     <arg name="y0" default="0"/>
@@ -16,11 +16,11 @@
     <arg name="dof" default="7" if="$(eval arg('arm') == 'gen3')"/> <!-- Number of degrees of freedom of the arm -->
     <arg name="dof" default="6" if="$(eval arg('arm') == 'gen3_lite')"/> <!-- Number of degrees of freedom of the arm -->
     <arg name="vision" default="true"/> <!-- True if the arm has a Vision module -->
-    
+
     <!-- Default gripper for Gen3 is none, default gripper for Gen3 lite is gen3_lite_2f -->
     <arg name="gripper" default="" if="$(eval arg('arm') == 'gen3')"/>
     <arg name="gripper" default="gen3_lite_2f" if="$(eval arg('arm') == 'gen3_lite')"/>
-    
+
     <arg name="robot_name" default="my_$(arg arm)"/>
     <arg name="prefix" default=""/>
     <arg name="cyclic_data_publish_rate" default="40"/> <!--Hz-->
@@ -29,7 +29,10 @@
     <arg name="use_sim_time" default="true"/>
     <arg name="debug" default="false" />
     <arg name="paused" default="true"/>
-    
+
+    <!-- Specify if MoveIt is used -->
+    <arg name="enable_moveit" default="true"/>
+
     <!-- Start Gazebo -->
     <include file="$(find kortex_gazebo)/launch/start_gazebo.launch" if="$(arg start_gazebo)">
             <arg name="gui" value="$(arg gazebo_gui)"/>
@@ -64,7 +67,7 @@
                 -J $(arg prefix)joint_4 -2.00
                 -J $(arg prefix)joint_5 0
                 -J $(arg prefix)joint_6 -1.00
-                -J $(arg prefix)joint_7 1.57"  
+                -J $(arg prefix)joint_7 1.57"
             if="$(eval not arg('gripper'))"/> <!--TODO-->
         <!-- With gripper -->
         <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
@@ -87,20 +90,25 @@
         <!-- Start the trajectory controllers -->
 
         <!-- Without gripper -->
-        <node name="$(arg prefix)$(arg arm)_trajectory_controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
-            output="screen" args="$(arg prefix)$(arg arm)_joint_trajectory_controller $(arg prefix)joint_state_controller"
-            if="$(eval not arg('gripper'))"/>
+        <group if="$(arg enable_moveit)">
+            <node name="$(arg prefix)$(arg arm)_trajectory_controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
+                  output="screen" args="$(arg prefix)$(arg arm)_joint_trajectory_controller $(arg prefix)joint_state_controller"
+                  if="$(eval not arg('gripper'))"/>
 
-        <!-- With gripper -->
-        <node name="$(arg prefix)$(arg arm)_controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
-            output="screen" args="$(arg prefix)$(arg arm)_joint_trajectory_controller $(arg prefix)joint_state_controller $(arg prefix)$(arg gripper)_gripper_controller"
-            unless="$(eval not arg('gripper'))"/>
+            <!-- With gripper -->
+            <node name="$(arg prefix)$(arg arm)_controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
+                  output="screen" args="$(arg prefix)$(arg arm)_joint_trajectory_controller $(arg prefix)joint_state_controller $(arg prefix)$(arg gripper)_gripper_controller"
+                  unless="$(eval not arg('gripper'))"/>
+        </group>
+
 
         <!-- Individual position controllers are stopped at first -->
 
         <!-- For 6 DOF arms -->
+        <arg name="stopped_joint_controllers_string" value="" unless="$(arg enable_moveit)"/>
+        <arg name="stopped_joint_controllers_string" value="--stopped" if="$(arg enable_moveit)"/>
         <node name="$(arg prefix)$(arg arm)_position_controllers_spawner" pkg="controller_manager" type="spawner" respawn="false"
-            output="screen" if="$(eval arg('dof') == 6)" args=" --stopped
+            output="screen" if="$(eval arg('dof') == 6)" args="$(arg stopped_joint_controllers_string)
             $(arg prefix)joint_1_position_controller
             $(arg prefix)joint_2_position_controller
             $(arg prefix)joint_3_position_controller
@@ -109,7 +117,7 @@
             $(arg prefix)joint_6_position_controller"/>
         <!-- For 7 DOF arms -->
         <node name="$(arg prefix)$(arg arm)_position_controllers_spawner" pkg="controller_manager" type="spawner" respawn="false"
-            output="screen" if="$(eval arg('dof') == 7)" args=" --stopped
+            output="screen" if="$(eval arg('dof') == 7)" args="$(arg stopped_joint_controllers_string)
             $(arg prefix)joint_1_position_controller
             $(arg prefix)joint_2_position_controller
             $(arg prefix)joint_3_position_controller
@@ -127,6 +135,7 @@
             <param name="dof" value="$(arg dof)"/>
             <param name="robot_name" value="$(arg robot_name)"/>
             <param name="prefix" value="$(arg prefix)"/>
+            <param name="enable_moveit" value="$(arg enable_moveit)"/>
             <rosparam command="load" file="$(find kortex_description)/arms/$(arg arm)/$(arg dof)dof/config/joint_limits.yaml" subst_value="true"/>
             <rosparam command="load" file="$(find kortex_description)/arms/$(arg arm)/$(arg dof)dof/config/twist_limits.yaml" subst_value="true"/>
             <!-- If there is a gripper, load the active joint names for it -->
@@ -138,17 +147,19 @@
         respawn="false" output="screen" />
 
         <!-- Start MoveIt main executable -->
-        <!-- TODO Find cleaner way to do that and that will work with other arms -->
-        <!-- Without gripper -->
-        <include file="$(find kortex_description)/../kortex_move_it_config/$(arg arm)_move_it_config/launch/move_group.launch" if="$(eval not arg('gripper'))"> 
-            <arg name="dof" value="$(arg dof)"/>
-            <arg name="prefix" value="$(arg prefix)"/>
-        </include>
-        <!-- With gripper -->
-        <include file="$(find kortex_description)/../kortex_move_it_config/$(arg arm)_$(arg gripper)_move_it_config/launch/move_group.launch" unless="$(eval not arg('gripper'))">
-            <arg name="dof" value="$(arg dof)"/>
-            <arg name="prefix" value="$(arg prefix)"/>
-        </include>
+        <group if="$(arg enable_moveit)">
+            <!-- TODO Find cleaner way to do that and that will work with other arms -->
+            <!-- Without gripper -->
+            <include file="$(find kortex_description)/../kortex_move_it_config/$(arg arm)_move_it_config/launch/move_group.launch" if="$(eval not arg('gripper'))">
+                <arg name="dof" value="$(arg dof)"/>
+                <arg name="prefix" value="$(arg prefix)"/>
+            </include>
+            <!-- With gripper -->
+            <include file="$(find kortex_description)/../kortex_move_it_config/$(arg arm)_$(arg gripper)_move_it_config/launch/move_group.launch" unless="$(eval not arg('gripper'))">
+                <arg name="dof" value="$(arg dof)"/>
+                <arg name="prefix" value="$(arg prefix)"/>
+            </include>
+        </group>
 
         <!-- Sleep, then unpause the physics in Gazebo and home the robot -->
         <node name="home_the_arm" pkg="kortex_gazebo" type="home_robot.py" output="screen" respawn="false" launch-prefix="bash -c 'sleep $(arg start_delay_seconds); $0 $@'">
@@ -160,11 +171,11 @@
             <param name="param_name_target" value="is_initialized" />
             <param name="param_value_expected" value="true" />
             <param name="wait_time" value="60" />
-        </test> 
+        </test>
 
         <!-- Start RViz -->
-        <node name="rviz" pkg="rviz" type="rviz" if="$(arg start_rviz)"/> 
-    
+        <node name="rviz" pkg="rviz" type="rviz" if="$(arg start_rviz)"/>
+
     </group>
 
 </launch>

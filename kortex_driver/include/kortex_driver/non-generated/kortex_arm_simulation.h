@@ -176,6 +176,7 @@ class KortexArmSimulation
     std::thread m_action_executor_thread;
 
     // MoveIt-related
+    bool enable_moveit = true;
     std::unique_ptr<moveit::planning_interface::MoveGroupInterface> m_moveit_arm_interface;
     std::unique_ptr<moveit::planning_interface::MoveGroupInterface> m_moveit_gripper_interface;
 
