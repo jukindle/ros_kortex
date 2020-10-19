@@ -57,6 +57,9 @@
     <arg name="right_default_goal_time_tolerance" default="0.5"/> <!--seconds-->
     <arg name="right_default_goal_tolerance" default="0.005"/> <!--radians-->
 
+    <!-- MoveIt usage definition -->
+    <arg name="enable_moveit" default="true"/>
+
     <!-- Load arms descriptions -->
    <param 
         name="robot_description" 
@@ -94,6 +97,7 @@
         <rosparam command="load" file="$(find kortex_description)/arms/$(arg left_arm)/$(arg left_dof)dof/config/joint_limits.yaml" subst_value="true"/>
         <!-- If there is a gripper, load the active joint names for it -->
         <rosparam command="load" file="$(find kortex_description)/grippers/$(arg left_gripper)/config/joint_limits.yaml" unless="$(eval not arg('left_gripper'))" subst_value="true"/>
+        <param name="enable_moveit" value="$(arg enable_moveit)"/>
     </node>
     <!-- Start the right arm kortex_driver node -->
     <node name="$(arg right_robot_name)_driver" pkg="kortex_driver" type="kortex_arm_driver" output="screen" ns="$(arg right_robot_name)"> launch-prefix="gdb -ex run args"
@@ -114,6 +118,7 @@
         <rosparam command="load" file="$(find kortex_description)/arms/$(arg right_arm)/$(arg right_dof)dof/config/joint_limits.yaml" subst_value="true"/>
         <!-- If there is a gripper, load the active joint names for it -->
         <rosparam command="load" file="$(find kortex_description)/grippers/$(arg right_gripper)/config/joint_limits.yaml" unless="$(eval not arg('right_gripper'))" subst_value="true"/>
+        <param name="enable_moveit" value="$(arg enable_moveit)"/>
     </node>
 
     <!-- Start joint and robot state publisher -->
