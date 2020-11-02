@@ -85,7 +85,12 @@
         </node>
 
         <!-- Launch kinova vision driver -->
-        <include if="$(arg launch_vision_driver)" file="$(find kinova_vision)/launch/kinova_vision.launch"/>
+        <group if="$(arg launch_vision_driver)">
+          <include file="$(find kinova_vision)/launch/kinova_vision.launch"/>
+          <node unless="$(eval prefix == '')" pkg="tf" type="static_transform_publisher"
+            name="kinova_vision_prefixer"
+            args="0 0 0 0 0 0  $(arg prefix)camera_link camera_link 100"/>
+        </group>
 
         <!-- Start MoveIt! main executable -->
         <group if="$(arg start_moveit)">
