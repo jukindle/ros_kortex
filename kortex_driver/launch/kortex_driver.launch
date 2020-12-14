@@ -8,6 +8,8 @@
     <arg name="vision_in_description" default="true"/> <!-- True if the arm has a Vision module -->
     <arg name="use_hard_limits" default="false"/> <!-- Set soft limits as hard limits (Gen3 only) -->
     <arg name="launch_vision_driver" default="true"/> <!-- Launches vision module -->
+    <arg name="color_camera_info_url" default=""/> <!-- Color calibration -->
+    <arg name="depth_camera_info_url" default=""/> <!-- Depth calibration -->
 
     <!-- Gripper configuration -->
     <!-- Default gripper for Gen3 is none, default gripper for Gen3 lite is gen3_lite_2f -->
@@ -86,7 +88,10 @@
 
         <!-- Launch kinova vision driver -->
         <group if="$(arg launch_vision_driver)">
-          <include file="$(find kinova_vision)/launch/kinova_vision.launch"/>
+          <include file="$(find kinova_vision)/launch/kinova_vision.launch">
+            <arg name="depth_camera_info_url" value="$(arg depth_camera_info_url)"/>
+            <arg name="color_camera_info_url" value="$(arg color_camera_info_url)"/>
+          </include>
           <node unless="$(eval prefix == '')" pkg="tf" type="static_transform_publisher"
             name="kinova_vision_prefixer"
             args="0 0 0 0 0 0  $(arg prefix)camera_link camera_link 100"/>

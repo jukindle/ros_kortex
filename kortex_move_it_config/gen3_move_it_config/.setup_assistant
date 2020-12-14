@@ -4,8 +4,8 @@ moveit_setup_assistant_config:
     relative_path: robots/gen3.xacro
     xacro_args: arm:=gen3
   SRDF:
-    relative_path: config/gen3.srdf
+    relative_path: config/7dof/gen3.srdf.xacro
   CONFIG:
     author_name: Alexandre Vannobel
     author_email: avannobel@kinova.ca
-    generated_timestamp: 1551811297
+    generated_timestamp: 1605623096
